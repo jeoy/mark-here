@@ -1,0 +1,3 @@
+cat #00EE00
+candy #B22222
+dog #FFEC8B
