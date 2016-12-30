@@ -126,7 +126,7 @@ color: #fff;
 #markDiv{
 	margin-top: 20px;
   width: 150px;
-	height: 100%;
+	height: 80%;
 	margin-right: 100px;
 }
 
@@ -503,9 +503,9 @@ $(function(){
 		}
 		var strDataURI = canvasDom[0].toDataURL();
 
-
+		debugger
 		saveFile(strDataURI,fileName.split('.')[0]+'_seg.png')
-
+		debugger
 		$("#nextImg").click();
 
 		tool = 'brush'
@@ -797,6 +797,9 @@ $(function(){
 	})
 
 	$("#fileList").on("click","option",function(){
+		tool = 'brush'
+		$('#toolsBar option')[1].selected = false
+		$('#toolsBar option')[0].selected = true
 		console.log('onchange')
 		// $("option").click(function(){
 			record = '';
