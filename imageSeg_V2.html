@@ -428,7 +428,7 @@ src: url('font/fzyy.TTF'); /* IE9+ */
 		</div>
 		<div id= 'storeDiv'>
 			<select multiple id ="toolsBar">
-				<option value="pen" selected=true>钢笔工具</option>
+				<option value="pen" selected=true>折线笔工具</option>
 				<option value="paintPot">油漆桶工具</option>
 				<!-- <option value="brush">画笔工具</option> -->
 				<option value="paintPot" disabled=true>开发中..</option>
@@ -500,6 +500,7 @@ $(function(){
  	// $("#preview").attr("src","img/logoGray.png");
 	var tool = 'pen'
 	$('#toolsBar').on("click","option",function(){
+		isStart = true
 		tool = $(this).val()
 	})
 
@@ -713,6 +714,7 @@ $(function(){
 	}
 	var time4dblclick;
 	var penPath = []
+	var isDrag = false
 	$("#undo").click(function(){
 		if (typeof penPath[penPath.length-1] === 'object'){
 			var popVa = penPath[penPath.length-1].pop()
@@ -725,6 +727,14 @@ $(function(){
 				else{
 					penPath = []
 				}
+			}
+
+			//一次撤销曲线。。
+			if(penPath.length && penPath[penPath.length-1].length && penPath[penPath.length-1][penPath[penPath.length-1].length-1].length ){
+				if (popVa[0] === penPath[penPath.length-1][penPath[penPath.length-1].length-1][penPath[penPath.length-1][penPath[penPath.length-1].length-1].length-1][0])
+					{
+						penPath[penPath.length-1].pop()
+					}
 			}
 
 		}
@@ -740,19 +750,86 @@ $(function(){
 		// 	penPath.pop()
 		// 	popVa = penPath[penPath.length-1].pop()
 		// }
-		oGC.clearRect(2,2,oriWidth-3,oriHeight-3)
 
+		oGC.clearRect(2,2,oriWidth-3,oriHeight-3)
+		updateCanvas()
 		// if(penPath.length >= 1){
+
+		// }
+	})
+	var isConnectPoint = true
+	var isConnectPoint2 = false
+	function updateCanvas(){
 		for (var i = 0; i < penPath.length; i++) {
-			for (var j = 0; j < penPath[i].length - 1; j++) {
+			for (var j = 0; j < penPath[i].length; j++) {
 				// if(penPath[i][j][0] !==-1 && penPath[i1][1] !==-1){
-					line(oGC, penPath[i][j][0], penPath[i][j][1], penPath[i][j+1][0], penPath[i][j+1][1])
+					// if(isConnectPoint2){
+					// 	line(oGC, penPath[i][j-1][penPath[i][j-1].length-1][0],penPath[i][j-1][penPath[i][j-1].length-1][1], penPath[i][j][0], penPath[i][j][1])
+					// 	isConnectPoint2 = false
+					// }
+					if (typeof penPath[i][j][0] === 'number'){
+						isConnectPoint = true
+						if(penPath[i][j+1]){
+							line(oGC, penPath[i][j][0], penPath[i][j][1], penPath[i][j+1][0], penPath[i][j+1][1])
+						}
+					}
+					else{
+
+						let curveArr = penPath[i][j]
+						if(penPath[i][j - 1]){
+							if(isConnectPoint){
+								if(curveArr[0]){
+									line(oGC, penPath[i][j-1][0], penPath[i][j-1][1], curveArr[0][0], curveArr[0][1])
+									console.log('draw connect point')
+									isConnectPoint = false
+								}
+
+							}
+						}
+						for (let k = 0; k < curveArr.length - 1; k++) {
+							line(oGC, curveArr[k][0], curveArr[k][1], curveArr[k+1][0], curveArr[k+1][1])
+						}
+
+					}
 				// }
 			}
 
 		}
-		// }
-	})
+
+	}
+
+	function updateCanvasNew(newoGC){
+		for (var i = 0; i < penPath.length; i++) {
+			for (var j = 0; j < penPath[i].length; j++) {
+					if (typeof penPath[i][j][0] === 'number'){
+						isConnectPoint = true
+						if(penPath[i][j+1]){
+							line(newoGC, penPath[i][j][0], penPath[i][j][1], penPath[i][j+1][0], penPath[i][j+1][1])
+						}
+					}
+					else{
+						let curveArr = penPath[i][j]
+						if(penPath[i][j - 1]){
+							if(isConnectPoint){
+								if(curveArr[0]){
+									line(newoGC, penPath[i][j-1][0], penPath[i][j-1][1], curveArr[0][0], curveArr[0][1])
+									console.log('draw connect point')
+									isConnectPoint = false
+								}
+							}
+						}
+						for (let k = 0; k < curveArr.length - 1; k++) {
+							line(newoGC, curveArr[k][0], curveArr[k][1], curveArr[k+1][0], curveArr[k+1][1])
+						}
+
+					}
+			}
+
+		}
+
+	}
+
+	dragStartFromNewGraph = true
 	canvasDom.mousemove(function(e){
 		moveY = e.pageY
 	  moveX = e.pageX
@@ -761,6 +838,37 @@ $(function(){
 		$('.mousePosition').html("X Position:" + (moveX -200) + "<br>   Y Position:" + (moveY-140));
 
 		switch (tool) {
+			case 'pen':
+				if(dragging){
+					// if(!penPath[penPath.length-1])
+					if(!penPath.length){
+						penPath.push([])
+						penPath[penPath.length-1].push([])
+					}
+					else if ((typeof penPath[penPath.length-1][penPath[penPath.length-1].length-1][0] !== 'object') || dragStart){
+						penPath[penPath.length-1].push([])
+					}
+					if(dragStartFromNewGraph){
+
+						dragStartFromNewGraph = false
+						penPath.push([])
+						penPath[penPath.length-1].push([])
+					}
+					dragStart = false
+					startX = e.pageX
+					startY = e.pageY
+					console.log('dragging')
+					penPath[penPath.length-1][penPath[penPath.length-1].length-1].push([moveX,moveY])
+
+					// line(oGC, lastX, lastY, moveX, moveY)
+					// lastX = moveX
+					// lastY = moveY
+					// oGC.clearRect(2,2,oriWidth-3,oriHeight-3)
+					updateCanvas()
+
+					// preventClick = true
+				}
+				break;
 	    case 'brush':
 	      if(!isStart){
 	        line(oGC, lastX, lastY, moveX, moveY)
@@ -795,31 +903,32 @@ $(function(){
 			time4dblclick = setTimeout(function() {
 				switch (tool) {
 					case 'pen':
+						if (preventClick){
+							preventClick = false
+							console.log(penPath)
+							return
+						}
 						oGC.clearRect(2,2,oriWidth-3,oriHeight-3)
-						if (isStart){
+						if (isStart && dragStartFromNewGraph){
 							firstPointX = e.pageX
 							firstPointY = e.pageY
 							line(oGC,firstPointX-1,firstPointY-1,firstPointX,firstPointY)
 							penPath.push([])
+							dragStartFromNewGraph = false
 						}
 						isStart = false
 						startX = e.pageX
 						startY = e.pageY
 						console.log('into click')
+
+						if(!penPath.length){
+							penPath.push([])
+						}
 						penPath[penPath.length-1].push([startX,startY])
 
 
+						updateCanvas()
 
-						// if(penPath.length > 1){
-							for (var i = 0; i < penPath.length; i++) {
-								for (var j = 0; j < penPath[i].length - 1; j++) {
-									// if(penPath[i][j][0] !==-1 && penPath[i1][1] !==-1){
-										line(oGC, penPath[i][j][0], penPath[i][j][1], penPath[i][j+1][0], penPath[i][j+1][1])
-									// }
-								}
-
-							}
-						// }
 						console.log(penPath)
 
 						lastX = startX
@@ -905,17 +1014,38 @@ $(function(){
 			var e = e || window.event
 		//  alert("e"+e.button);
 		 if(e.button == "2"){
-			 line(oGC, penPath[penPath.length-1][penPath[penPath.length-1].length-1][0], penPath[penPath.length-1][penPath[penPath.length-1].length-1][1], penPath[penPath.length-1][0][0], penPath[penPath.length-1][0][1])
-			 penPath[penPath.length-1].push([penPath[penPath.length-1][0][0], penPath[penPath.length-1][0][1]])
+			 if (typeof penPath[penPath.length-1][0][0] === 'number'){
+				 line(oGC, penPath[penPath.length-1][penPath[penPath.length-1].length-1][0], penPath[penPath.length-1][penPath[penPath.length-1].length-1][1], penPath[penPath.length-1][0][0], penPath[penPath.length-1][0][1])
+				 penPath[penPath.length-1].push([penPath[penPath.length-1][0][0], penPath[penPath.length-1][0][1]])
+			 }
+			 else {
+				 line(oGC, penPath[penPath.length-1][penPath[penPath.length-1].length-1][0], penPath[penPath.length-1][penPath[penPath.length-1].length-1][1], penPath[penPath.length-1][0][0][0], penPath[penPath.length-1][0][0][1])
+				//  penPath[penPath.length-1].push([penPath[penPath.length-1][0][0][0], penPath[penPath.length-1][0][0][1]])
+				penPath[penPath.length-1].push([penPath[penPath.length-1][0][0], penPath[penPath.length-1][0][1]])
+
+			 }
 			//  penPath.push([-1,-1])
 			 lastX = -1
 			 lastY = -1
 			 isStart = true
+			 dragStart = false
+			 dragStartFromNewGraph = true
+			 e.preventDefault()
+			 event.returnvalue=false;
+			 return false
 		 }
-		 e.preventDefault()
-		 event.returnvalue=false;
-		 return false
+		 else if (e.button == "0"){
+			//  console.log('mouseDown')
+			dragStart = true
+			isConnectPoint = true
+			 dragging = true
+		 }
 		//  preventDefault()
+		}).mouseup(function(e){
+			// console.log('mouseUp')
+			isConnectPoint = false
+			// isConnectPoint2 = true
+			dragging = false
 		})
 
 	// 	.dblclick(function(e){
@@ -927,7 +1057,8 @@ $(function(){
 	// 		lastY = -1
 	// 		isStart = true
 	// });
-
+	var dragging = false
+	var preventClick = false
 
 	$("#category").on("click","option",function(){
 		tool = 'paintPot'
@@ -1198,14 +1329,7 @@ $(function(){
 		var newOGC = $('#newCanvas'+ canvasInd +'')[0].getContext("2d")
 		rect(newOGC,1,1,oriWidth-2,oriHeight-2);
 
-		for (var i = 0; i < penPath.length; i++) {
-			for (var j = 0; j < penPath[i].length - 1; j++) {
-				// if(penPath[i][j][0] !==-1 && penPath[i1][1] !==-1){
-					line(newOGC, penPath[i][j][0], penPath[i][j][1], penPath[i][j+1][0], penPath[i][j+1][1])
-				// }
-			}
-
-		}
+		updateCanvasNew(newOGC)
 		isStart = true
 	  //step 2
 	  var currenSeed;
