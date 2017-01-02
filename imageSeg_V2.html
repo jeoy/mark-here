@@ -819,7 +819,10 @@ $(function(){
 							}
 						}
 						for (let k = 0; k < curveArr.length - 1; k++) {
-							line(newoGC, curveArr[k][0], curveArr[k][1], curveArr[k+1][0], curveArr[k+1][1])
+							if(curveArr[k+1]){
+								line(newoGC, curveArr[k][0], curveArr[k][1], curveArr[k+1][0], curveArr[k+1][1])
+
+							}
 						}
 
 					}
