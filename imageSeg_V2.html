@@ -121,10 +121,10 @@ button{
 }
 
 ::-webkit-input-placeholder { /* WebKit browsers */
-color: #fff;
+/*color: #fff;*/
 }
 #markDiv{
-	margin-top: 20px;
+	margin-top: 15px;
   width: 150px;
 	height: 80%;
 	margin-right: 100px;
@@ -132,13 +132,27 @@ color: #fff;
 
 #markDiv p {
 	font-size: 15px;
-	opacity: 0.8;
+	opacity: 0.9;
 }
 #storeDiv{
 	flex:3;
 	height: 100%;
 	margin-right: 150px;
 }
+
+.newCanvas{
+	left: 200px;
+	position: absolute;
+	top: 140px;
+	z-index: 1
+}
+.undo{
+	margin: 80px 10px 0 10px;
+}
+#undo{
+		font-size: 15px;
+}
+
 #mark{
 	position: relative;
 	width: 450px;
@@ -193,6 +207,7 @@ color: #fff;
 	/*height: 2500px;*/
 	position: absolute;
 	top: 140px;
+	z-index: 100
 }
 
 
@@ -362,7 +377,7 @@ src: url('font/fzyy.TTF'); /* IE9+ */
 
 
 	<a  id ="genFileList"  class="dow" disabled = "disabled" > 生成文件列表</a>
-	<textarea id = "fileListInput" placeholder="将文件名字列表复制到这里"></textarea>
+	<textarea id = "fileListInput" placeholder="按下方按钮导入文件"></textarea>
 	<div id = "fileList">
 
 	</div>
@@ -399,6 +414,7 @@ src: url('font/fzyy.TTF'); /* IE9+ */
 
 		</div>
 		<div id= 'markDiv'>
+			<input id='searchBox' placeholder="这里输入筛选标签🏷" />
 			<p>这里选择标签配置文件</p>
 			<input type="file" id="ConfigFile" />
 			<!-- <input class='newCateInput' placeholder="在这里添加标签"/>
@@ -407,13 +423,18 @@ src: url('font/fzyy.TTF'); /* IE9+ */
 			<a id ="addCate" class="dowSLit" >+</a>
 			<a id ="delCate" class="dowSLit" >-</a> -->
 		</div>
+		<div class="undo">
+			<a id ="undo" class="dowLit"  > 撤销</a>
+		</div>
 		<div id= 'storeDiv'>
 			<select multiple id ="toolsBar">
-				<option value="brush" selected=true>画笔工具</option>
+				<option value="pen" selected=true>钢笔工具</option>
 				<option value="paintPot">油漆桶工具</option>
+				<!-- <option value="brush">画笔工具</option> -->
 				<option value="paintPot" disabled=true>开发中..</option>
 
 			</select>
+
 				<a id ="submit" class="dowLit2"  > 保存图片</a>
 		</div>
 	</div>
@@ -477,7 +498,7 @@ $(function(){
 			resultArr;
 	// $("#store").animate({scrollTop:$("#store")[0].scrollHeight - $("#store").height()},1000) ;
  	// $("#preview").attr("src","img/logoGray.png");
-	var tool = 'brush'
+	var tool = 'pen'
 	$('#toolsBar').on("click","option",function(){
 		tool = $(this).val()
 	})
@@ -485,30 +506,49 @@ $(function(){
   $('#submit').click(function(){
 		var targetColor;
 		$('#mask2').show()
+
+		var CanvasMerge = $('<canvas id="newCanvasMerge" class = "newCanvas">');
+
+		CanvasMerge[0].width = oriWidth
+		CanvasMerge[0].height = oriHeight
+
+		$("body").append(CanvasMerge)
+		var oGCTOT = CanvasMerge[0].getContext("2d")
+		for (var i = 1; i <= canvasInd; i++) {
+			let newCanDom = $('#newCanvas'+i)
+			if(newCanDom[0]){
+				oGCTOT.drawImage(newCanDom[0],0,0);
+			}
+		}
+
+		// var strDataURI = CanvasMerge[0].toDataURL();
+
+		// saveFile(strDataURI,fileName.split('.')[0]+'_seg.png')
+
+		// return
+
 		window.setTimeout(function(){
 		for (var i = 0; i < oriWidth; i++) {
 			for (var j = 0; j < oriHeight; j++) {
 				// console.log(i,j)
-				targetColor = oGC.getImageData(i, j,1,1).data
+				targetColor = oGCTOT.getImageData(i, j,1,1).data
 
 				 if( targetColor[3] == 0 ){
-					 var imgData=oGC.createImageData(1,1);
+					 var imgData=oGCTOT.createImageData(1,1);
 					 imgData.data[0]=0;
 					 imgData.data[1]=0;
 					 imgData.data[2]=0;
 					 imgData.data[3]=255;
-					 oGC.putImageData(imgData,i, j);
+					 oGCTOT.putImageData(imgData,i, j);
 				 }
 			}
 		}
-		var strDataURI = canvasDom[0].toDataURL();
+		var strDataURI = CanvasMerge[0].toDataURL();
 
-		debugger
 		saveFile(strDataURI,fileName.split('.')[0]+'_seg.png')
-		debugger
 		$("#nextImg").click();
 
-		tool = 'brush'
+		tool = 'pen'
 		// $("#toolsBar option:checked").remove()
 		$('#toolsBar option')[1].selected = false
 		$('#toolsBar option')[0].selected = true
@@ -552,7 +592,7 @@ $(function(){
 			$("#preImg").attr("disabled",false);
 		}
 		else {
-			alert("请先将文件列表复制到这里")
+			alert("按下方按钮导入文件")
 		}
 
 	});
@@ -623,11 +663,10 @@ $(function(){
 		oriHeight = getNaturalHeight(this)
 		canvasDom[0].width = oriWidth
 		canvasDom[0].height = oriHeight
-				oGC.lineWidth = 3;
-
-
+				oGC.lineWidth = 1;
+		console.log('改变canvas大小')
+		penPath = []
 	 $('#mask').css({width:oriWidth,height:oriHeight})
-		//  debugger
 		//  $('#mask').show()
 	 $('#mask2').css({width:oriWidth,height:oriHeight})
 		// $('#mask')[0].height = oriHeight
@@ -672,7 +711,48 @@ $(function(){
 	    saveLink.click();
 			$('#mask2').hide()
 	}
+	var time4dblclick;
+	var penPath = []
+	$("#undo").click(function(){
+		if (typeof penPath[penPath.length-1] === 'object'){
+			var popVa = penPath[penPath.length-1].pop()
 
+			if (penPath[penPath.length-1].length <= 1){
+				isStart = true
+				if(penPath.length!==1){
+					penPath.pop()
+				}
+				else{
+					penPath = []
+				}
+			}
+
+		}
+		else if (typeof penPath[penPath.length-1] === 'string'){
+			var popVa = penPath.pop()
+			$('#'+popVa).remove()
+		}
+
+		// if (popVa[0] === -1){
+		// 	penPath.pop()
+		// }
+		// while(!popVa) {
+		// 	penPath.pop()
+		// 	popVa = penPath[penPath.length-1].pop()
+		// }
+		oGC.clearRect(2,2,oriWidth-3,oriHeight-3)
+
+		// if(penPath.length >= 1){
+		for (var i = 0; i < penPath.length; i++) {
+			for (var j = 0; j < penPath[i].length - 1; j++) {
+				// if(penPath[i][j][0] !==-1 && penPath[i1][1] !==-1){
+					line(oGC, penPath[i][j][0], penPath[i][j][1], penPath[i][j+1][0], penPath[i][j+1][1])
+				// }
+			}
+
+		}
+		// }
+	})
 	canvasDom.mousemove(function(e){
 		moveY = e.pageY
 	  moveX = e.pageX
@@ -690,7 +770,6 @@ $(function(){
 	      break;
 	    case 'ellipse':
 	      if(!isStart){
-	        // oGC.clearRect(3,3, 796,796)
 
 	        distanceX = moveX - startX
 	        distanceY = moveY - startY
@@ -699,7 +778,6 @@ $(function(){
 	      break;
 	    case 'rect':
 	      if(!isStart){
-	        // oGC.clearRect(3,3, 796,796)
 	        for (let i in canvasDate) {
 	          // console.log('draw' + canvasDate[i])
 	          rect(oGC, canvasDate[i][0] - 200, canvasDate[i][1]- 140, canvasDate[i][2], canvasDate[i][3]);
@@ -714,80 +792,142 @@ $(function(){
 
 		// $('.mousePosition').html($("fileList").height());
 		}).click(function(e){
-			switch (tool) {
-		    case 'paintPot':
-		        $('#status').hide()
-						if(!$(".category option:checked")[0]) {
-							alert('请先添加颜色的样式')
-							return
+			time4dblclick = setTimeout(function() {
+				switch (tool) {
+					case 'pen':
+						oGC.clearRect(2,2,oriWidth-3,oriHeight-3)
+						if (isStart){
+							firstPointX = e.pageX
+							firstPointY = e.pageY
+							line(oGC,firstPointX-1,firstPointY-1,firstPointX,firstPointY)
+							penPath.push([])
 						}
-						let painColorArr = $(".category option:checked")[0].style.backgroundColor.slice(4,-1).split(',')
-						for (var i = 0; i < painColorArr.length; i++) {
-							painColorArr[i] = +painColorArr[i].trim()
+						isStart = false
+						startX = e.pageX
+						startY = e.pageY
+						console.log('into click')
+						penPath[penPath.length-1].push([startX,startY])
+
+
+
+						// if(penPath.length > 1){
+							for (var i = 0; i < penPath.length; i++) {
+								for (var j = 0; j < penPath[i].length - 1; j++) {
+									// if(penPath[i][j][0] !==-1 && penPath[i1][1] !==-1){
+										line(oGC, penPath[i][j][0], penPath[i][j][1], penPath[i][j+1][0], penPath[i][j+1][1])
+									// }
+								}
+
+							}
+						// }
+						console.log(penPath)
+
+						lastX = startX
+						lastY = startY
+						break;
+					case 'paintPot':
+							$('#status').hide()
+							if(!$(".category option:checked")[0]) {
+								alert('请先添加颜色的样式')
+								return
+							}
+							let painColorArr = $(".category option:checked")[0].style.backgroundColor.slice(4,-1).split(',')
+							for (var i = 0; i < painColorArr.length; i++) {
+								painColorArr[i] = +painColorArr[i].trim()
+							}
+							painColorArr.push(255)
+							$('#mask').show()
+							window.setTimeout(function(){
+								if(painColorArr){
+									scanLine(e.pageX,e.pageY,painColorArr,[0,0,0,255])
+								}
+								else{
+									$('#status').show()
+									alert('请不要用黑色填充')
+								}
+							},100)
+
+					 // console.log(oGC.getImageData(e.pageX-200,e.pageY-140,1,1));
+						break;
+					case 'brush':
+						if(isStart){
+							startX = e.pageX
+							startY = e.pageY
+							// oGC.clearRect(3,3, 796,796)
+							isStart = false
+							lastX = startX
+							lastY = startY
+							console.log(startX,startY)
 						}
-						painColorArr.push(255)
-						$('#mask').show()
-		        window.setTimeout(function(){
-		          if(painColorArr){
-		            scanLine(e.pageX,e.pageY,painColorArr,[0,0,0,255])
-		          }
-		          else{
-		            $('#status').show()
-		            alert('请不要用黑色填充')
-		          }
-		        },100)
+						else {
+							console.log(startX,startY)
+							line(oGC, lastX, lastY, startX, startY)
+							isStart = true
+						}
+						break;
+					case 'ellipse':
+						if(isStart){
+							startX = e.pageX
+							startY = e.pageY
+							isStart = false
+						}
+						else{
+							// console.log('end x position:'+ e.pageX)
+							// console.log('end y position:'+ e.pageY)
 
-		     // console.log(oGC.getImageData(e.pageX-200,e.pageY-140,1,1));
-		      break;
-		    case 'brush':
-		      if(isStart){
-		        startX = e.pageX
-		        startY = e.pageY
-		        // oGC.clearRect(3,3, 796,796)
-		        isStart = false
-		        lastX = startX
-		        lastY = startY
-		        console.log(startX,startY)
-		      }
-		      else {
-		        console.log(startX,startY)
-		        line(oGC, lastX, lastY, startX, startY)
-		        isStart = true
-		      }
-		      break;
-		    case 'ellipse':
-		      if(isStart){
-		        startX = e.pageX
-		        startY = e.pageY
-		        isStart = false
-		      }
-		      else{
-		        // console.log('end x position:'+ e.pageX)
-		        // console.log('end y position:'+ e.pageY)
+							isStart = true
+					 }
+						break;
+					case 'rect':
+						if(isStart){
+							startX = e.pageX
+							startY = e.pageY
+							isStart = false
 
-		        isStart = true
-		     }
-		      break;
-		    case 'rect':
-		      if(isStart){
-		        startX = e.pageX
-		        startY = e.pageY
-		        isStart = false
+						}
+						else{
+							// console.log('end x position:'+ e.pageX)
+							// console.log('end y position:'+ e.pageY)
 
-		      }
-		      else{
-		        // console.log('end x position:'+ e.pageX)
-		        // console.log('end y position:'+ e.pageY)
+							isStart = true
+							canvasDate.push([startX, startY, distanceX, distanceY])
+						}
+						break;
+					default:
 
-		        isStart = true
-		        canvasDate.push([startX, startY, distanceX, distanceY])
-		      }
-		      break;
-		    default:
+				}
+			}, 1);
 
-		  }
 
-	});
+		}).bind("contextmenu",function(){
+	 return false;
+		}).mousedown(function(e){
+			var e = e || window.event
+		//  alert("e"+e.button);
+		 if(e.button == "2"){
+			 line(oGC, penPath[penPath.length-1][penPath[penPath.length-1].length-1][0], penPath[penPath.length-1][penPath[penPath.length-1].length-1][1], penPath[penPath.length-1][0][0], penPath[penPath.length-1][0][1])
+			 penPath[penPath.length-1].push([penPath[penPath.length-1][0][0], penPath[penPath.length-1][0][1]])
+			//  penPath.push([-1,-1])
+			 lastX = -1
+			 lastY = -1
+			 isStart = true
+		 }
+		 e.preventDefault()
+		 event.returnvalue=false;
+		 return false
+		//  preventDefault()
+		})
+
+	// 	.dblclick(function(e){
+	// 		// clearTimeout(time4dblclick);
+	// 		line(oGC, lastX, lastY, firstPointX, firstPointY)
+	// 		penPath.push([firstPointX,firstPointY])
+	// 		penPath.push([-1,-1])
+	// 		lastX = -1
+	// 		lastY = -1
+	// 		isStart = true
+	// });
+
 
 	$("#category").on("click","option",function(){
 		tool = 'paintPot'
@@ -795,12 +935,36 @@ $(function(){
 		$('#toolsBar option')[0].selected = false
 		$('#toolsBar option')[1].selected = true
 	})
-
+	$('#searchBox').keyup(function(){
+		let val = $(this).val()
+		if(val){
+			for (var i = 0; i < categoryArr.length; i++) {
+				let index = categoryArr[i][0].indexOf(val)
+				if(index === -1){
+					$("#category option:eq("+i+")").hide()
+				}
+				else {
+					$("#category option:eq("+i+")").show()
+				}
+			}
+		}
+		else {
+			for (var i = 0; i < categoryArr.length; i++) {
+				$("#category option:eq("+i+")").show()
+			}
+		}
+	})
 	$("#fileList").on("click","option",function(){
-		tool = 'brush'
+		tool = 'pen'
+		$('#toolsBar option')[2].selected = false
 		$('#toolsBar option')[1].selected = false
 		$('#toolsBar option')[0].selected = true
+		lastX = -1
+		lastY = -1
+		isStart = true
+		canvasInd = 0
 		console.log('onchange')
+		$('.newCanvas').remove()
 		// $("option").click(function(){
 			record = '';
 			recordIn = '';
@@ -883,39 +1047,7 @@ $(function(){
 						nameArr = this.result.match(regExName)
 					  resultArr = this.result.split('\n')
 
-						// for (let item = 0; item < resultArr.length; item++){
-						// 	var regExG = /(\w+\.\w+)\s(\d)(.*)/g
-						// 	var matches = regExG.exec(resultArr[item])
-						// 	if (matches) {
-						// 		var regExRect = /[a-zA-Z]+(\s[\d]+){4}/g
-						// 		var matchRect
-						// 		while( (matchRect = regExRect.exec(matches[3])) !=null ){
-						// 			let scale = 1
-						// 			let cat = matchRect[0].split(' ')[0]
-						// 			let startX = matchRect[0].split(' ')[1]
-						// 			let startY = matchRect[0].split(' ')[2]
-						// 			let endX = matchRect[0].split(' ')[3]
-						// 			let endY = matchRect[0].split(' ')[4]
-						// 			let distanceX = endX - startX
-						// 			let distanceY = endY - startY
-						// 			if (categoryArr.indexOf(cat) === -1) {
-						// 				categoryArr.push(cat)
-						// 			}
-						// 			if(!canvasDate[nameArr[item]]) {
-						// 				canvasDate[nameArr[item]] = []
-						// 			}
-						// 			canvasDate[nameArr[item]].push([startX, startY, distanceX, distanceY, endX, endY, cat, scale])
-						// 		}
-						// 	}
-						// }
-						// if(categoryArr){
-						// 	for (var i = 0; i < categoryArr.length; i++) {
-						// 		var newCateDom = $('<option value="'+ categoryArr[i][0] +'">'+ categoryArr[i][0] +'</option>')
-						// 		newCateDom.css('background-color',categoryArr[i][1])
-						// 		$(".category").append(newCateDom);
-						// 		$(".category :last-child").attr('selected','selected').siblings().attr('selected',false)
-						// 	}
-						// }
+
 
 						$("#fileListInput").val(nameArr.join('\n'));
 
@@ -966,37 +1098,7 @@ $(function(){
 	});
 
 	$("#color").val('#' + Math.floor(Math.random()*16777215).toString(16))
-	// $("#addCate").click(function(){
-	// 	var newCate = $(".newCateInput").val()
-	// 	var color =  $("#color").val()
-	// 	if(color === '#000000') {
-	// 		alert('不能选择黑色作为填充色')
-	// 		return
-	// 	}
-	//
-	// 	if (newCate) {
-	// 		categoryArr.push([newCate,color]);
-	// 		// window.localStorage["data"] = JSON.stringify(categoryArr)
-	// 		var newCateDom = $('<option value="'+ newCate +'">'+ newCate +'</option>')
-	// 		// newCateDom.selected = 'true'
-	// 		newCateDom.css('background-color',color)
-	// 		$(".category").append(newCateDom);
-	// 		if($(".category option:selected")[0]){
-	// 			$(".category option:selected")[0].selected = ''
-	// 		}
-	// 		$(".category :last-child").attr('selected','selected').siblings().attr('selected',false)
-	// 		$(".newCateInput").val('')
-	//
-	// 		var newColor = '#' + Math.floor(Math.random()*16777215).toString(16)
-	//
-	// 		if (newColor==='#ffffff'){
-	// 			var newColor = '#' + Math.floor(Math.random()*16777215).toString(16)
-	// 		}
-	// 		$("#color").val(newColor)
-	// 	}
 
-
-	// })
 
 	function getRGB(hex){
     var rgb=[0,0,0];
@@ -1008,17 +1110,7 @@ $(function(){
 	//从 localstorage 初始化 categoryw
 
 	var categoryArr = [];
-  // if (window.localStorage.data){
-	// 	categoryArr = JSON.parse(window.localStorage.data)
-	// }
-	// if(categoryArr.length){
-	// 	for (var i = 0; i < categoryArr.length; i++) {
-	// 		var newCateDom = $('<option value="'+ categoryArr[i][0] +'">'+ categoryArr[i][0] +'</option>')
-	// 		newCateDom.css('background-color',categoryArr[i][1])
-	// 		$(".category").append(newCateDom);
-	// 		$(".category :last-child").attr('selected','selected').siblings().attr('selected',false)
-	// 	}
-	// }
+
 
 	$("#delCate").click(function(){
 		let delVal = $(".category option:checked").val()
@@ -1090,19 +1182,44 @@ $(function(){
 	}
 
 	var seedStack = []
-	rect(oGC,1,1,50,50);
-	function scanLine(x,y,rgba,compareColor) {
+	// rect(oGC,1,1,300,150);
+	var canvasInd = 0;
+	function scanLine(x,y,rgba,compareColor,newCanvas) {
 	  seedStack.push([x-200,y-140])
+		canvasInd++
+		var newCanvas = $('<canvas id="newCanvas'+ canvasInd +'" class = "newCanvas">');
 
+		newCanvas[0].width = oriWidth
+		newCanvas[0].height = oriHeight
+
+		penPath.push('newCanvas'+ canvasInd)
+
+		$("body").append(newCanvas)
+		var newOGC = $('#newCanvas'+ canvasInd +'')[0].getContext("2d")
+		rect(newOGC,1,1,oriWidth-2,oriHeight-2);
+
+		for (var i = 0; i < penPath.length; i++) {
+			for (var j = 0; j < penPath[i].length - 1; j++) {
+				// if(penPath[i][j][0] !==-1 && penPath[i1][1] !==-1){
+					line(newOGC, penPath[i][j][0], penPath[i][j][1], penPath[i][j+1][0], penPath[i][j+1][1])
+				// }
+			}
+
+		}
+		isStart = true
 	  //step 2
 	  var currenSeed;
 	  var xLeft,
 	      xRight;
 
 	  while (seedStack.length) {
-	    if (seedStack.length > 10000) return
+	    if (seedStack.length > 10000) {
+				$('#mask').hide()
+				console.log('栈溢出')
+				return
+			}
 	    currenSeed = seedStack.pop()
-	    var targetColor = oGC.getImageData(currenSeed[0], currenSeed[1],1,1).data
+	    var targetColor = newOGC.getImageData(currenSeed[0], currenSeed[1],1,1).data
 	    // if (rgba[0]==targetColor[0]) {
 	    //   $('#status').show()
 	    //   return
@@ -1119,22 +1236,22 @@ $(function(){
 	    }
 	    //find xleft
 	    i = 1
-	    targetColor = oGC.getImageData(currenSeed[0]-i, currenSeed[1],1,1).data
+	    targetColor = newOGC.getImageData(currenSeed[0]-i, currenSeed[1],1,1).data
 	    while(targetColor[3] < 10){
-	      fillColor(currenSeed[0]-i,currenSeed[1],rgba)
+	      fillColor(currenSeed[0]-i,currenSeed[1],rgba,newCanvas)
 	      xLeft = currenSeed[0]-i
 	      i++
-	      targetColor = oGC.getImageData(currenSeed[0]-i, currenSeed[1],1,1).data
+	      targetColor = newOGC.getImageData(currenSeed[0]-i, currenSeed[1],1,1).data
 	    }
 
 	    //find xRight
 	    i = 0
-	    targetColor = oGC.getImageData(currenSeed[0]+i, currenSeed[1],1,1).data
+	    targetColor = newOGC.getImageData(currenSeed[0]+i, currenSeed[1],1,1).data
 	    while(targetColor[3] < 10){
-	      fillColor(currenSeed[0]+i,currenSeed[1],rgba)
+	      fillColor(currenSeed[0]+i,currenSeed[1],rgba,newCanvas)
 	      xRight = currenSeed[0]+i
 	      i++
-	      targetColor = oGC.getImageData(currenSeed[0]+i, currenSeed[1],1,1).data
+	      targetColor = newOGC.getImageData(currenSeed[0]+i, currenSeed[1],1,1).data
 	    }
 	    // console.log(xLeft,xRight)
 
@@ -1142,20 +1259,18 @@ $(function(){
 	    //find y+1's seed
 	    candidateSeed = 0
 	    for (var i = xLeft; i <= xRight; i++) {
-	      targetColor = oGC.getImageData(i, currenSeed[1]+1,1,1).data
+	      targetColor = newOGC.getImageData(i, currenSeed[1]+1,1,1).data
 	      if(targetColor[3] < 10 && (rgba[0]!=targetColor[0] || rgba[1]!=targetColor[1] || rgba[2]!=targetColor[2] ) ){
 	        candidateSeed = i
 	      }
 	      else {
-	        targetColor = oGC.getImageData(i - 1, currenSeed[1]+1,1,1).data
+	        targetColor = newOGC.getImageData(i - 1, currenSeed[1]+1,1,1).data
 	        if(targetColor[3] < 10 && (rgba[0]!=targetColor[0] || rgba[1]!=targetColor[1] || rgba[2]!=targetColor[2] )){
-	          // fillColor(candidateSeed+100,currenSeed[1]+1,[0,255,255,255])
 	          seedStack.push([i - 1,currenSeed[1]+1])
 	        }
 	      }
 	    }
 	    if(candidateSeed){
-	      // fillColor(candidateSeed+100,currenSeed[1]+1,[0,255,0,255])
 	      seedStack.push([candidateSeed,currenSeed[1]+1])
 	      // console.log(candidateSeed,currenSeed[1]+1)
 	    }
@@ -1163,21 +1278,19 @@ $(function(){
 	    //find y-1's seed
 	    candidateSeed = 0
 	    for (var i = xLeft; i <= xRight; i++) {
-	      targetColor = oGC.getImageData(i, currenSeed[1]-1,1,1).data
+	      targetColor = newOGC.getImageData(i, currenSeed[1]-1,1,1).data
 	      if(targetColor[3] < 10 && (rgba[0]!=targetColor[0] || rgba[1]!=targetColor[1] || rgba[2]!=targetColor[2] )){
 	        candidateSeed = i
 	      }
 	      else {
-	        targetColor = oGC.getImageData(i - 1, currenSeed[1]-1,1,1).data
+	        targetColor = newOGC.getImageData(i - 1, currenSeed[1]-1,1,1).data
 	        if(targetColor[3] < 10 && (rgba[0]!=targetColor[0] || rgba[1]!=targetColor[1] || rgba[2]!=targetColor[2] ) ){
-	          // fillColor(candidateSeed+100,currenSeed[1]-1,[0,255,255,255])
 	          seedStack.push([i - 1,currenSeed[1]-1])
 	          // console.log(i - 1,currenSeed[1]-1)
 	        }
 	      }
 	    }
 	    if(candidateSeed){
-	      // fillColor(candidateSeed+100,currenSeed[1]-1,[0,255,0,255])
 	      seedStack.push([candidateSeed,currenSeed[1]-1])
 	      // console.log(candidateSeed,currenSeed[1]-1)
 	    }
@@ -1188,15 +1301,17 @@ $(function(){
 	  $('#mask').hide()
 	}
 
-	function fillColor(x, y, rgba){
-	  var imgData=oGC.createImageData(1,1);
-	  imgData.data[0]=rgba[0];
-	  imgData.data[1]=rgba[1];
-	  imgData.data[2]=rgba[2];
-	  imgData.data[3]=rgba[3];
-	  oGC.putImageData(imgData,x, y);
 
-	}
+		function fillColor(x, y, rgba){
+			var newOGC = $('#newCanvas'+ canvasInd +'')[0].getContext("2d")
+		  var imgData=newOGC.createImageData(1,1);
+		  imgData.data[0]=rgba[0];
+		  imgData.data[1]=rgba[1];
+		  imgData.data[2]=rgba[2];
+		  imgData.data[3]=rgba[3];
+		  newOGC.putImageData(imgData,x, y);
+
+		}
 
 });
 
