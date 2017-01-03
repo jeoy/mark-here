@@ -1,0 +1,347 @@
+% Template for ICASSP-2017 paper; to be used with:
+%          spconf.sty  - ICASSP/ICIP LaTeX style file, and
+%          IEEEbib.bst - IEEE bibliography style file.
+% --------------------------------------------------------------------------
+\documentclass{article}
+\usepackage{spconf,amsmath,graphicx}
+\usepackage{amsmath,amssymb,amsthm}
+%\usepackage{graphicx}
+%\usepackage{verbatim}
+\usepackage{multirow}
+\usepackage{cite}
+\usepackage{epsfig}
+%\usepackage[ruled,vlined,lined,linesnumbered]{algorithm2e}
+%\usepackage{algorithm,algorithmic}
+\usepackage{flushend}
+ \usepackage{mathtools}
+ \usepackage{mathrsfs}
+ \usepackage[outdir=./]{epstopdf}
+ \usepackage{caption}
+\usepackage{subfigure}
+
+% Example definitions.
+% --------------------
+\def\x{{\mathbf x}}
+\def\L{{\cal L}}
+
+% Title.
+% ------
+\title{Multi-rate Polar Codes for Solid State Drives}
+%
+% Single address.
+% ---------------\ast
+%\name{Yi Zhong$^{\star}$  \qquad Chun Zhang$^{\dagger}$\qquad Chenrong Xiong$^{\ast}$\qquad Zhiyuan Yan$^{\diamond}$}
+%
+%\address{$^{\star \dagger}$  Institute of Microelectronics, Tsinghua University, Beijing 100084 China
+%             \\$^{\dagger}$Email: zhangchun@mail.tsinghua.edu.cn  \qquad  $^{\star}$Email: jeoy\_z@126.com
+%   \\ $^{\ast}$Department of Electrical and Computer Engineering, Lehigh University,\\Bethlehem, PA 18015 USA, Email: chx310@lehigh.edu
+%   \\ $^{\diamond}$Department of Electrical and Computer Engineering, Lehigh University,\\Bethlehem, PA 18015 USA, Email: zhy6@lehigh.edu
+% }
+
+ % Affiliation
+%
+% For example:
+% ------------
+%\address{School\\
+%	Department\\
+%	Address}
+%
+% Two addresses (uncomment and modify for two-address case).
+% ----------------------------------------------------------
+\twoauthors
+  {Yi Zhong, Chun Zhang,\sthanks{This project is partly sponsored by the National High Technology Research and Development Program of China (863 Program, No. 2015AA016701).}}
+	{Institute of Microelectronics\\
+	Tsinghua University, Beijing China}
+%	Email: jeoy\_z@126.com, zhangchun@mail.tsinghua.edu.cn}
+  {Chenrong Xiong,  Zhiyuan Yan\sthanks{This work was supported in part by the National Science Foundation under Grant ECCS-1509674.}}
+	{Department of ECE\\
+	Lehigh University, Bethlehem, PA USA}
+%	Email: chx310@lehigh.edu, zhy6@lehigh.edu}
+
+\begin{document}
+\topmargin=0mm
+%\ninept
+%
+\maketitle
+
+\begin{abstract}
+As solid state drives (SSDs) are gradually replacing hard disk drives (HDDs), error correction is critical to SSDs since NAND flash has deteriorating reliability over their life span. Existing error correction codes suffer from limited error correction capability or error floor issues. 
+% like low-density parity-check (LDPC) codes already achieved great error correction performance in low SNRs region. However, because of inherent structural weaknesses in the code's interconnect network, error rates will significantly increase at high SNRs region, which called error floor phenomenon \cite{zhang2013controlling}. Recently, polar codes were introduced by Arikan, even at high SNRs region still can achieve good performance.
+Polar codes are promising for SSDs since they are theoretically proven optimal codes and have good error floor behavior. 
+In this paper, we first design multi-rate polar codes for SSDs, and then implement encoder and decoder that simultaneously support multiple rates in FPGA. Multi-rate polar codes provide a good tradeoff between reliability and efficiency. Finally, we use an FPGA emulation platform to evaluate the error performance of our polar codes, and examine their error floor behavior.
+
+%implement a codes generator and accomplish an FPGA test platform. Meanwhile, we provide different rates codes frame error rates (FERs) and BERs performance, Furthermore, we compare these with performance of LDPC.
+\end{abstract}
+%
+\begin{keywords}
+Solid state drive, error correction codes, polar codes, FPGA emulator
+\end{keywords}
+%
+\section{Introduction}
+\label{sec:intro}
+Although NAND flash memory has high capacity and fast cell access, its storage reliability is an important problem that needs to be alleviated. When the number of program-erase (P/E) cycles increase, the Inter-poly oxide layer in memory will be gradually destructed so that it becomes increasingly hard to trap electrons, leading to growing crossover probability. Various error correction codes (ECCs) have been considered for this problem, but existing ECCs either have limited error correction capability or suffer from error floor problems \cite{Zhao2013LDPC}.
+
+%A lot of ECC are proposed for resolving this problem, LDPC codes as an asymptotically regular codes can perform near the Shannon limit, it has received lots of attentions and effort to improve performance used in SSDs \cite{Zhao2013LDPC}. However, because of the error floor phenomenon, BERs curve of LDPC decrease slowly with SNR increasing at high SNRs region.
+
+Recently  proposed polar codes \cite{arikan2009channel} are good candidates as error correction codes for SSDs for two reasons. First, polar codes were proved as capacity-achieving codes. Also, polar codes do no suffer from error floor problems \cite{Eslami2012On}.
+ 
+In this paper, we first design multi-rate polar codes for SSDs, and then implement encoder and decoder that simultaneously support multiple rates in FPGA. Multi-rate polar codes are suitable for SSDs, because NAND flash has deteriorating reliability over their life span. Using multi-rate polar codes provides a good tradeoff between reliability and efficiency (redundancy). In early stages, the crossover probability is lower, and hence polar codes with higher code rates can meet the error correction requirements. When the number of P/E cycles increases, correction ability of high rate codes is no longer enough, and instead lower rate codes are necessary in late stages.
+
+We also use an FPGA emulation platform to evaluate the error performance of our polar codes, and examine their error floor behavior. Our results show that our polar codes provide the desired tradeoff between reliability and redundancy, and that they do not have error floor when bit error rates go down to $10^{-12}$. The FPGA platform also sets our work apart from prior works in this area (see, for example, \cite{li2015study}). Prior works such as \cite{li2015study} rely on numerical simulations for error performance evaluation and cannot examine the error performance for very low error rates. Our FPGA platform allows us to evaluate the error performance of polar codes at much lower bit rate than \cite{li2015study}.
+ 
+ 
+% appearing at high SNRs region is also an important advantage of Polar codes. As mentioned above, error (or crossover) probability which is a reliability parameter of binary symmetric channel (BSC) varies from different stages of SSD. Taking this issue into account, using different codes in the different stages is an effective way to improve the error correction performance. Having capability of explicit and regular construction, polar codes are easily to construct different rates codes on the condition of keeping same code length. It is feasible to adaptive polar codes in different stages of SSDs by changing the rate of polar codes.
+
+%In this paper, we implement a code generator by using the algorithm in \cite{tal2013construct}, use it to generate several different codes from different error probabilities. Then we simulate several different codes on our FPGA platform, provide FERs and BERs performance curve with BERs down to $10^{-12}$.  Moreover, we compare these performance with results of LDPC.
+	
+	The remainder of this paper is organized as follows. In Section~\ref{sec:review}, the encoder and decoders of polar codes are briefly reviewed.  In Section~\ref{sec:code}, we present the design details of multi-rate polar codes. In Section~\ref{sec:Performance}, we present our hardware implementation of the encoder and decoder, describe our FPGA emulation platform, and present the error performance of our polar codes. In Section~\ref{sec:conclusion}, we make some conclusions and discuss some future work.
+
+
+\section{Review}
+\label{sec:review}
+
+We now briefly review the encoding and decoding operations of polar codes, as they will be discussed later.
+
+For an $N$-bit ($N=2^n$) binary dataword $(u_0, u_1,\cdots,u_{N-1})$, denoted as $u^{N-1}_0$, $N-K$ bits are zeros (called frozen bits) and $K$ bits are information bits. The codeword corresponding to $u^{N-1}_0$, denoted as $x^{N-1}_0$ is computed as 
+\begin{equation}
+\begin{array}{l}
+     x^{N-1}_0 =  u^{N-1}_0B_NF^{\otimes n},
+\end{array}\label{eq:encoding}
+\end{equation}
+where  $B_N$ is the $N\times N$ bit-reversal permutation matrix, $F=\left[
+\begin{smallmatrix}
+1 & 0 \\
+1 & 1
+\end{smallmatrix}
+\right]$, and $F^{\otimes
+  n}$ is the $n$-th Kronecker power of $F$. The  $(N, K)$ polar code is said to have a rate of $K/N$.
+
+The successive cancelation (SC) decoding algorithm \cite{arikan2009channel} decodes the dataword
+ $u^{N-1}_0$ one by one from $u_0$ to $u^{N-1}$. If an encoding bit is a frozen bit,
+it is set to zero. Otherwise, the channel transition probability associated with
+this bit is calculated and then ML decoding is performed for this bit based on
+the channel transition probability.
+
+Instead of making a hard decision for each information bit of $u^{N-1}_0$, the successive cancelation list (SCL) decoding algorithm  \cite{tal2015list} generates two paths in which the information bit is assumed to be 0 and 1, respectively. When the number of paths
+is greater than a predefined list size $L$, the $L$ most reliable paths are
+kept. At the end of the decoding procedure, the most reliable path is chosen as
+the decoding result.
+
+The CA-SCL decoding algorithm \cite{niu2012crc} is used to decode the CRC-concatenated polar
+codes. It improves the error performance of polar codes at the expense
+of a smaller code rate. In the CA-SCL decoding algorithm, the cyclic redundancy check (CRC)
+is used to select the final decoding result. If there
+is at least one path satisfying the check, the most likely CRC-valid
+path is chosen. Otherwise, the most reliable path is selected.
+
+
+%Polar codes are a kind of linear block error-correcting codes based on channel polarization theory, it can achieve channel capacity in low-complexity decoding theoretically. \cite{arikan2009channel} explained the channel polarization theory and proposed the polar codes construction method.
+%     .We denote $N$ as code length and $K/N$ as code rate, binary-input sequence is represented as $u^{N-1}_0(u_0, u_1,\cdots,u_{N-1})$. There are only $K$ elements carry information in the binary-input sequence, the remainder carry fixed bit like 0 as frozen bits. Both information bits and frozen bits are encoded into codewords $x^{N-1}_0(x_0,x_1,\cdots,x_{N-1})$ by multiplying a polar codes generator matrix $G$.
+% \begin{equation}
+%\begin{array}{l}
+%     x^{N-1}_0 =  u^{N-1}_0B_NF^{\otimes n}
+%\end{array}\label{eq:encoding}
+%\end{equation}
+%     Where  $F =  \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix} $, $F^{\otimes n}$ is the $nth$ Kronecker power of  $F$.
+% According to successive cancellation (SC) decoding algorithm introduced by Arikan, we express polar codes with parameter $(N,K,\mathcal{A},u_{\mathcal{A}^c})$, $N$ denotes the code length, number of information bits are represented as $K$, information bits set is defined as A, and we represent the direction of frozen bits as $u_{\mathcal{A}^c}$. On the condition of parameter given, the processes of decoding are a hard decision for each information bit, computing corresponding maximum likelihood rates (LLRs), generate estimate bit $\hat{u}_i$ of corresponding codewords $u_i$. Although this decoding algorithm can achieve excellent decoding performance when code length approaches infinite, but for polar codes with medium or short code length, the decoding performance is not so good. A variety of improved SC decoding algorithms were proposed, like SC list (SCL) decoding of polar codes \cite{tal2015list}, CRC-aided(CA) decoding of polar codes \cite{niu2012crc}.
+% %We use CA-SCL decoding algorithm \cite{reduced_latency_VLSI} in our platform.
+
+
+\section{Multi-Rate Polar Codes}
+\label{sec:code}
+\subsection{SSD set-up}
+%With the development of non-volatile memory, SSDs gradually become main storage devices in various applications.
+As shown in Fig.~\ref{fig:SSDMainC}, SSDs generally consist of micro control unit (MCU), ECC, NAND flash memory array and interfaces, and these components form a complete microsystem.
+%Our SSD configuration is shown in Fig.~\ref{fig:SSDMainC}.
+For data transmission, individual modules are interconnected by an AXI bus, a direct data path between USB 3.0, SATA, PCIe interfaces and NAND flash memory array. ARM (Advanced RISC Machines) is chosen as main control chip, which controls the timing of data transmission by sending specific instructions. When data is written to the SSD from USB 3.0, SATA, PCIe interfaces, data is stored into an asynchronous FIFO (AFIFO) under the control of DMA (Direct Memory Access) through the data bus.  After encoded in the ECC module, data is programmed into flash memory through the NFC (NAND flash controller).
+
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=3.5in]{../latex/SSDMainC.pdf}
+\caption{SSD system configuration}
+\label{fig:SSDMainC}
+\end{figure}
+
+
+\subsection{Multi-rate polar codes}
+Due to the special construction of NAND flash memory, the data size of read and program processes must be aligned with the page size, which means that at least one page of data is read out during one read process. Hence the block length of polar codes is also determined based on the page size.
+%NAND flash memory array contains plenty of flash memory cells.
+
+Normally, a NAND flash array contains 128 to 8192 blocks, every block contains 128 to 512 pages, and the size of these pages could be 2, 4, 8 or 16 KBytes. The numbers of blocks and pages and the page size vary for different manufacturers.
+
+In our work, we assume a page size of 4 KBytes and choose a block length of 8192 bits for our polar codes. 
+Thus, each page stores four codewords. 
+%According to the ONFI (Open NAND flash Interface) specification, the data width is 8 bits, and hence writing and reading a codeword both require 1024 store and read operations.
+The primary reason for our choice of the block length is hardware implementation. Since we
+implement the ECC on FPGA (more details in Section~\ref{sec:Performance}), the block length is also limited by the capacity of the FPGA board. Of course, our work can be extended to polar codes of longer block lengths, such as $2^{15}$.
+
+
+NAND flash memory has a finite number of P/E cycles. Beyond this limit, due to oxide wear-out, the electrons may leak, and hence the information stored in memory cells is no longer reliable. Therefore,  the crossover probability is different over the lifetime of SSDs. To ensure the reliability of the store information as well as to reduce redundancy, ideally different code rates should be used in different life stages of SSDs. In early stages, the crossover probability is lower, and hence polar codes with higher code rates can meet the error correction requirements. When the number of P/E cycles increases, correction ability of high rate codes is no longer enough, and instead lower rate codes are necessary in late stages.
+%In this work, we focus on three different code rates for our polar codes: 0.9, 0.93,
+
+To generate our polar codes of length 8192, we use the degrading merge algorithm in \cite{tal2013construct}, which can efficiently construct polar codes. To ensure that the memory requirement does not grow exponentially with code length, this construction method works for any specified memory limit. This algorithm consists of degrading quantization and upgrading quantization, and a parameter $\mu$ denotes the approximations of the quantization process. We implement this algorithm and choose $\mu = 256$ to generate our codes. For the binary symmetric channel, we use a set of crossover probabilities measured from 16nm NAND SLC flash memory at different program/erase cycles \cite{CommunicationWithYueLi}. When the number of program/erase cycles ranges from 5 to 10000, the crossover probability increases from $1.263\times 10^{-4}$ to $6.35\times 10^{-4}$. We picked the crossover probability for 6000 program/erase cycles, which is 0.0004, and use this crossover probability to generate polar codes of different rates. The code rate is a tradeoff between error correction performance and efficiency. Lower rate codes have better error correction capability but need more redundancy, while higher rate codes are just the opposite. Thus, multi-rate codes are necessary over the life time of SSDs. Using the crossover probability 0.0004, we have obtained three polar codes, (8192, 7373), (8192, 7618), and (8192, 7700) codes, which correspond to rates of 0.9, 0.93, and 0.94, respectively. We note that all three have rates at least 0.9, which is often assumed for storage systems.
+
+
+
+%NEED MORE CONSIDERATION
+
+\section{Hardware Implementations and Performance Evaluation}
+\label{sec:Performance}
+\subsection{Hardware implementations of Encoder and Decoder}
+To support multi-rate polar codes, the encoder and decoder need to work for polar codes with different rates.
+
+The encoding process of polar codes is carried out as in Eq.~(\ref{eq:encoding}). This encoding process can be implemented by recursively using a basic unit of two operations: $u_1\oplus u_2 = x_1; u_2 = x_2$. This encoding process is the same for any code rate with the same length. That is, the encoding process is independent of the code rate. Hence, the details of the encoder are omitted henceforth.
+
+Our decoder is based on a high throughput CA-SCL decoder proposed in \cite{reduced_latency_VLSI}. The decoder in \cite{reduced_latency_VLSI} performs list decoding on a binary tree, whose nodes characterize the structure of polar codes. In the hardware implementation of the decoder in \cite{reduced_latency_VLSI}, the information about the nodes of the tree 
+%including  types of each node (frozen or data), frozen bit location called patterns of ML nodes \cite{xiong2015multi}, as well we
+and the decoding schedule are stored in the ROMs. For different code rates polar codes with same length, the hardware implementation of our decoder is the same, and the only difference is the node information and decoding schedule stored in the ROMs. Hence, the node information and decoding schedule of all three codes are stored in the ROMs, and they are retrieved accordingly. 
+%So the reconfiguration work is to regenerate nodes information and write this into ROMs by AXI bus.
+
+We implemented the encoder and decoder in FPGA using a Virtex-7 FPGA VC707 board. We chose a list size of 4 for the CA-SCL decoder. There are two clock domains in our design: the clock rate in the encoder is 166.64 MHz, while the clock rate in the decoder is 41.66 MHz. Based on this clock rate, the throughput of the codec is 391Mbps. The hardware utilized by the encoder and decoder are detailed in Table~\ref{tab:utilized}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{FPGA implementation results of encoder and decoder in our design}
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+
+%& CPU  & ENC & CHN & CA-SCL Decoder  \\ \hline
+%LUTs &13,873  &13,273 & 3,084& 161,469 \\ \hline
+%FFs &  311&17,758 & 7,802 & 28,784\\ \hline
+%BRAMs  & 1,312&0 &0 & 5,823 \\ \hline
+&   encoder  & CA-SCL decoder  \\ \hline
+LUTs  &13,273 & 161,469 \\ \hline
+FFs &17,758  & 28,784\\ \hline
+BRAMs  &0 & 5,823 \\ \hline
+
+\end{tabular}
+\label{tab:utilized}
+\end{table}
+
+\subsection{FPGA Emulation Platform}
+To evaluate the error performance of polar codes, especially at very low bit error rates, numerical simulations are too time consuming. Hence, we adapt an FPGA emulation platform we developed in prior work \cite{sips2016}. One difference between the FPGA platform in \cite{sips2016} and this work is the FPGA board. The platform in \cite{sips2016} uses a Genesys-2 Kintex-7 FPGA development
+board with a Xilinx Kintex-7$^{\text{TM}}$ FPGA (XC7K325TFFG900-2), whereas the platform in this work uses a Xilinx Virtex-7 FPGA development board with a Xilinx Virtex-7$^{\text{TM}}$ VC709 (XC7VX690TFFG1761-2). This switch was made because the latter offers more hardware resources.
+The FPGA platform in this work also needs to support multi-rate polar codes by reconfiguring its modules.
+%are represented. These reconfigurable parts aim to work for different polar codes, which could meet the adaptive requirements of SSDs application. Meanwhile, we test several different code rates codes, provide comparison curve in different crossover probability of BSC, from the point of view of SSDs, in different P/E cycles. Furthermore, error floor can not be observed down to BERs the of $10^{-12}$.
+Next we describe the platform and focus on the reconfiguration of different modules. 
+
+%To evaluate the error performance of polar codes, especially at very low bit error rates, numerical simulations are too time consuming. Hence, we adapt an FPGA emulation platform we developed in prior work \cite{sips2016}. One difference between the FPGA platform in \cite{sips2016} and this work is the FPGA board. The platform in \cite{sips2016} uses a Genesys-2 Kintex-7 FPGA development
+%board with a Xilinx Kintex-7$^{\text{TM}}$ FPGA (XC7K325TFFG900-2), whereas the platform in this work uses ???. This switch was made because the latter offers more hardware resources.
+%The FPGA platform in this work also needs to support multi-rate polar codes by reconfiguring its modules.
+%%are represented. These reconfigurable parts aim to work for different polar codes, which could meet the adaptive requirements of SSDs application. Meanwhile, we test several different code rates codes, provide comparison curve in different crossover probability of BSC, from the point of view of SSDs, in different P/E cycles. Furthermore, error floor can not be observed down to BERs the of $10^{-12}$. 
+%Next we describe the platform and focus on the reconfiguration of different modules.
+
+Our FPGA platform consists of CPU controller, channel module, polar code sequence generator, encoder, decoder, and error bit check modules, as shown in Fig.~\ref{fig:sysD}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=8cm]{../latex/SystemDiagram.pdf}
+\caption{Block diagram of our FPGA emulation platform}
+\label{fig:sysD}
+\end{figure}
+
+%\subsubsection{CPU and AXI4 Protocol}
+In our design, we use MicroBlaze as main control chip embedded in FPGA, which is connected with other peripheral modules by an AXI4 bus. The AXI4 bus is used to control the peripheral modules. When we connect MicroBlaze and control registers of peripheral modules by the AXI-lite protocol, these registers will be mapped to system memory. Values of control registers of peripheral modules can be easily rewritten by the CPU by altering the corresponding memory. In our performance evaluation, the crossover probability in the channel module and reconfiguration of the decoder for multi-rate polar codes are all changed by using the AXI-lite protocol. 
+
+%\subsubsection{Polar Code Sequence Generator}
+The polar code sequence generator module consists of two parts, a random number generator (RNG) and a random-access memory (RAM). For an $(N, K)$ polar code generated by our design, we use an $N$-bit binary code structure sequence to represent the positions of frozen bits. For example, a code structure sequence $(1,0,0,1,\cdots)$ means that bits 2 and 3 are frozen bits and bits 1 and 4 are information bits. The information bits used in our emulation are generated by the RNG. 
+%Obviously, there are $N-K $symbols $0$ in the sequence. 
+We store each code structure sequence into a RAM, whose address ranges from $0$ to $N-1$ with 1 bit depth. This process is controlled by software through the AXI-lite protocol. Then the information bit generated by the RNG is stored into the addresses whose values equal $1$. After $K$ random information bits are produced, we get an $N$-bit polar code sequence. Polar code sequence for multi-rate polar codes with the same length can be generated by altering the frozen bit positions stored in the RAM via the AXI-lite interface.
+
+%\subsubsection{Encoder}
+%As mentioned above, polar codes encoding process is expressed as Equation (1). Based on the encoding processes reviewed in section II, $u_1\oplus u_2 = x_1; u_2 = x_2$, a recursive dichotomization is utilized in the implementation. For any code rate with same length, the encoding construction is the same, so we will not go into detail here.
+
+
+%\subsubsection{Channel Models}
+Our FPGA emulation platform supports two channel models, additive white Gaussian noise (AWGN) channel and binary symmetric channel (BSC). In SSD applications, the binary symmetric channel is mainly used to simulate NAND flash memory, and $p$ denotes the cell crossover probability of flash memory. That is, a binary bit gets flipped with probability $p$, and remain unchanged with probability $1 - p$. We use a codeword sequence $x^{N-1}_0$ as the input for the channel. Given an output sequence $y^{N-1}_0 (y_0, y_1,\cdots,y_{N-1})$ by the channel, its corresponding LLR sequence is calculated by
+\begin{equation}
+\begin{array}{l}
+$$LLR_i  =
+\begin{cases}
+\mathrm{log}  \frac{1-p}{p}     &\mathrm{if}  \quad y_i = 1   \\
+\mathrm{log}  \frac{p}{1-p}     &\mathrm{if}  \quad y_i = 0,
+\end{cases}$$
+\end{array}
+\end{equation}
+where $i=0, 1, \cdots, N-1$.
+These LLRs are the input of the following decoding process. The registers storing the crossover probability of channel are connected with the AXI-lite interface. Thus, the performance for different P/E cycles of SSDs can be simulated by altering the values of these registers.
+
+
+
+%\subsubsection{Decoder}
+%
+%Our RLLD algorithm is proposed \cite{reduced_latency_VLSI}. In our decoder hardware design, all this information including nodes types, frozen bits nodes location called patterns of ML nodes \cite{xiong2015multi} and computing schedules are stored in ROMs, which connect with AXI-lite interface. For different code rates polar codes with same length, our decoder hardware construction is the same, the only different parts are nodes information stored in ROMs. So the reconfiguration work is to regenerate nodes information and write this into ROMs by AXI bus.
+
+\subsection{Simulation Results}
+%We choose the crossover probability which is equal to 0.0004 to generate these codes, code length is 8192 bits. 
+For the three polar codes, (8192, 7373), (8192, 7618), and (8192, 7700) codes, their bit error rates (BERs) and frame error rates (FERs) are compared in Fig.~\ref{fig:merge}. As we see in Fig.~\ref{fig:merge}, a higher rate code has worse performance than a lower rate code. 
+Each point in Fig.~\ref{fig:merge} is obtained by accumulating at least 100 frames in error. Due to the long time needed to accumulate enough frames in error, we focus on the code with the highest rate, the code with rate 0.94, for very low bit error rates, to examine its error floor behavior. Fig.~\ref{fig:merge} shows that the code with rate 0.94 has no error floor even when the BER gets as low as $10^{-12}$. Since the two codes with rate 0.9 and 0.93 should have performance that is no worse than that of the code with rate 0.94, we conjecture that the two codes with lower rates have no error floor when the BER gets as low as $10^{-12}$. We will verify this in our future work.
+%
+%We run 0.94 rate code whose length is 8192 bits in low crossover probability region, with BERs down to very high magnitude, the descending slope of BERs keeps stable even the BERs as low as $10^{-12}$, no error floor behavior occurs in this region. Meanwhile, we also provide performance curves of 0.93 and 0.90 codes, we didn't show the results down to high magnitude because the time is so limited.
+%As we can see, high rate codes has worse performance than low rate codes. However, former stores more information than the latter, whose error correcting capability can also meet requirements in the early stages of SSDs. With the increasing of P/E, code rate has to be reduced to meet the requirements. Therefore, over the lifetime of SSDs, different rate codes should be adopted in the different stages to improve the performance of SSDs.
+
+\begin{figure}[htbp]
+\centering
+
+\includegraphics[width=9cm]{../latex/mergeResult-eps-converted-to.pdf}
+
+ \caption{Error performance of polar codes of different rates and a (35840, 33792) LDPC code}
+ \label{fig:merge}
+\end{figure}
+
+%\begin{figure}[htbp]
+%\centering
+%
+%\includegraphics[width=9cm]{../tex/differentRateCodes-eps-converted-to.pdf}
+%
+% \caption{Error performance of polar codes of different rates}
+% \label{fig:diff}
+%
+%\end{figure}
+% what are the block lengths and rates of the LDPC code and polar code that are compared?
+
+In Fig.~\ref{fig:merge}, we also compare the bit error rate of our polar code with rate 0.94 with that of a (35840, 33792) LDPC code for SSDs, which is generated from \cite{zhang2015high}. The two codes have roughly the same rate, but the block length of the LDPC code is much longer. Since the error performance of polar codes improves with their block length in general, the polar code is somewhat at a disadvantage. We see that the LDPC code shows an error floor, starting at bit error rate of $10^{-10}$. In contrast, the polar code shows no sign of an error floor when the bit error rate goes down to $10^{-12}$. This demonstrates the advantage of polar codes in error floor, which is significant for hard drives due to their stringent requirement on bit error rates.
+
+
+
+%, at the lower BERs region, performance of LDPC is clearly better than polar code's. But as the BERs down to $10^{-10}$, we can noticeably see in Fig.~\ref{fig:compare} that the LDPC's curve declines more slowly than before, it means BERs are getting worse at this region which we call it the error floor phenomenon. However, BERs of polar codes still sharply declines, crossing over the performance curve of LDPC.
+
+
+%\begin{figure}[htbp]
+%\centering
+%\includegraphics[width=7cm]{../tex/polar&ldpc-eps-converted-to.pdf}
+%\caption{Bit error rates of an (8192, 7700) polar code and a (35840, 33792) LDPC code}
+%\label{fig:compare}
+%\end{figure}
+
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+In this paper, we first design multi-rate polar codes for SSDs, and then implement encoder and decoder that simultaneously support multiple rates in FPGA. Finally, we use an FPGA emulation platform to evaluate the error performance of our polar codes, and examine their error floor behavior. Our results show that our polar codes have good error floor behavior.
+
+The error performance of the polar codes can be improved by using more sophisticated decoders, such as the CA-SCL decoder with a greater list size. Of course, using greater block length will likely lead to performance improvement. Both approaches will impact the decoder complexity and hence its hardware implementation. We will explore these in our future work. 
+Also, we have used the binary symmetric channel to model NAND flash memory so far in our work. In our future work, we will use actual NAND flash memory in our platform for a more realistic performance evaluation.
+
+% To start a new column (but not a new page) and help balance the last-page
+% column length use \vfill\pagebreak.
+% -------------------------------------------------------------------------
+%\vfill
+%\pagebreak
+
+
+
+
+% References should be produced using the bibtex program from suitable
+% BiBTeX files (here: strings, refs, manuals). The IEEEbib.bst bibliography
+% style file from IEEE produces unsorted bibliography list.
+% -------------------------------------------------------------------------
+%\bibliographystyle{IEEEbib}
+
+\newpage
+\bibliographystyle{IEEEtran}
+% argument is your BibTeX string definitions and bibliography database(s)
+%\bibliography{IEEEabrv,../bib/paper}
+\bibliography{../latex/bibtex/IEEEfull,../latex/Ref}
+
+\end{document}
