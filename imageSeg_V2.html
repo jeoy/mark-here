@@ -787,7 +787,9 @@ $(function(){
 							}
 						}
 						for (let k = 0; k < curveArr.length - 1; k++) {
-							line(oGC, curveArr[k][0], curveArr[k][1], curveArr[k+1][0], curveArr[k+1][1])
+							if(curveArr[k+1] && curveArr[k][0]){
+								line(oGC, curveArr[k][0], curveArr[k][1], curveArr[k+1][0], curveArr[k+1][1])
+							}
 						}
 
 					}
@@ -849,6 +851,9 @@ $(function(){
 						penPath[penPath.length-1].push([])
 					}
 					else if ((typeof penPath[penPath.length-1][penPath[penPath.length-1].length-1][0] !== 'object') || dragStart){
+						if(typeof penPath[penPath.length-1] === 'string'){
+							penPath.push([])
+						}
 						penPath[penPath.length-1].push([])
 					}
 					if(dragStartFromNewGraph){
@@ -927,6 +932,11 @@ $(function(){
 						if(!penPath.length){
 							penPath.push([])
 						}
+
+						if(typeof penPath[penPath.length-1] === 'string'){
+						  penPath.push([])
+						}
+
 						penPath[penPath.length-1].push([startX,startY])
 
 
