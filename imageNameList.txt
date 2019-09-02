@@ -1,3 +1,0 @@
-BG1.jpg 3 xiong 381 545 574 721 xiong 642 603 727 677 xiong 797 536 984 712 
-BG2.jpg
-BG3.jpg 2 xiong 60 36 330 287 xiong 723 338 846 413 
