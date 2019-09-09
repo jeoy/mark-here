@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import './main-area.scss';
-import { scanLine, getTime } from './scanLine';
-import { setTimeout } from 'timers';
+import { scanLine } from './scanLine';
 
 export class MainArea extends Component {
     state = {
@@ -10,6 +9,8 @@ export class MainArea extends Component {
             x: 0,
             y: 0
         },
+        canvasWith: 0,
+        canvasHeight: 0,
         ctx: null
     };
 
@@ -17,44 +18,52 @@ export class MainArea extends Component {
 
     paint = () => {
         var { x, y } = this.state.position;
-        const { ctx } = this.state;
-        ctx.fillStyle = '#666';
-        ctx.lineWidth = 2;
+        const { ctx, canvasHeight, canvasWith } = this.state;
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 1;
         console.time('scanLine');
-        ctx.strokeRect(0, 0, 400, 400);
-        scanLine(ctx, x, y, [255,255,0,255]);
+
+        scanLine(ctx, x, y, [255, 122, 0, 255], canvasWith, canvasHeight);
         console.timeEnd('scanLine');
     };
 
     getPosition = e => {
         this.setState({
             position: {
-                x: e.clientX - 180,
-                y: e.clientY - 140
+                y: e.clientX,
+                x: e.clientY
             }
         });
     };
     componentDidMount() {
         var c = document.getElementById('myCanvas');
         var ctx = c.getContext('2d');
-        this.setState({
-            ctx
-        });
 
+        var canvasWith = 300;
+        var canvasHeight = 200;
+        this.setState({
+            ctx,
+            canvasWith,
+            canvasHeight
+        });
     }
     render() {
+        const { canvasHeight, canvasWith } = this.state;
         return (
             <div className="main-area">
                 <div>
+                    <canvas
+                        onClick={this.paint}
+                        onMouseMove={this.getPosition}
+                        id="myCanvas"
+                        style={{ display: 'block' }}
+                        width={canvasWith + 'px'}
+                        height={canvasHeight + 'px'}></canvas>
+                </div>
+
+                <div>
                     [{this.state.position.x}, {this.state.position.y}]
                 </div>
-                <canvas
-                    onClick={this.paint}
-                    onMouseMove={this.getPosition}
-                    id="myCanvas"
-                    width="400"
-                    height="400"></canvas>
-                <button onClick={this.drawSth}>点我</button>
             </div>
         );
     }

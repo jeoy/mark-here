@@ -1,9 +1,4 @@
-var seedStack = [];
-const maxStack = 10000
-function getPointColor(ctx, x, y) {
-    let res = ctx.getImageData(x, y, 1, 1).data;
-    return res
-}
+const COLOR_DIM = 4;
 
 function isSameColor(color1, color2) {
     return (
@@ -12,119 +7,109 @@ function isSameColor(color1, color2) {
         color1[2] === color2[2]
     );
 }
-var count = 0;
-export function getTime(ctx) {
-    console.time('getImageData');
-    for (let i = 0; i < 100; i++) {
-        getPointColor(ctx, 1, 1);
-    }
-    console.timeEnd('getImageData');
+
+function isBlankArea(targetColor) {
+    return targetColor && targetColor[3] < 10;
 }
-export function scanLine(ctx, x, y, rgba) {
+
+function imageToMap(canvasWith, canvasHeight, ctx) {
+    var cacheMap = new Map();
+    const dataArr = ctx.getImageData(0, 0, canvasWith, canvasHeight).data;
+
+    let index = 0;
+    for (let i = 0; i < canvasHeight + 1; i++) {
+        for (let j = 0; j < canvasWith + 1; j++) {
+            index = i * canvasWith + j;
+            cacheMap.set(
+                `${i},${j}`,
+                Array(
+                    ...dataArr.slice(index * COLOR_DIM, (index + 1) * COLOR_DIM)
+                )
+            );
+        }
+    }
+    return cacheMap;
+}
+
+function mapToImage(cacheMap, canvasWith, canvasHeight, ctx) {
+    var imgData = ctx.createImageData(canvasWith, canvasHeight);
+    let index = 0;
+    for (let i = 0; i < canvasHeight; i++) {
+        for (let j = 0; j < canvasWith; j++) {
+            index = i * canvasWith + j;
+            for (let k = 0; k < COLOR_DIM; k++) {
+                imgData.data[index * COLOR_DIM + k] = cacheMap.get(`${i},${j}`)[
+                    k
+                ];
+            }
+        }
+    }
+    ctx.putImageData(imgData, 0, 0);
+}
+
+export function scanLine(ctx, x, y, rgba, canvasWith, canvasHeight) {
+    var seedStack = [];
+
     seedStack.push([x, y]);
-    var newOGC = ctx;
+    const cacheMap = imageToMap(canvasWith, canvasHeight, ctx);
     //step 2
     var currentPoint;
     var xLeft, xRight;
 
-    function fillColor2(x, y, color) {
-        ctx.fillStyle = color;
-        ctx.fillRect(x, y, 1, 1);
+    function getPointColor(cacheMap, x, y) {
+        if (x > canvasHeight || y > canvasWith) {
+            return [255, 255, 255, 255];
+        }
+        return cacheMap.get(`${x},${y}`);
     }
 
     function fillColor(x, y, rgba) {
-        var imgData = newOGC.createImageData(1, 1);
-        imgData.data[0] = rgba[0];
-        imgData.data[1] = rgba[1];
-        imgData.data[2] = rgba[2];
-        imgData.data[3] = rgba[3];
-        newOGC.putImageData(imgData, x, y);
+        cacheMap.set(`${x},${y}`, rgba);
     }
+    var myWorker = new Worker('./worker_demo.js');
+
+    myWorker.addEventListener(
+        'message',
+        function(event) {
+            console.log('Worker said : ' + event.data);
+        },
+        false
+    );
+
+    myWorker.postMessage('hello my worker'); // start the worker.
+    return;
     while (seedStack.length) {
-        count = 0;
-        if (seedStack.length > maxStack) {
-            console.log('栈溢出');
-            return;
-        }
         currentPoint = seedStack.pop();
-        console.log(currentPoint[0], currentPoint[1]);
 
-        var targetColor = getPointColor(
-            newOGC,
-            currentPoint[0],
-            currentPoint[1]
-        );
+        let [positionX, positionY] = currentPoint;
+        xLeft = positionX;
+        xRight = positionX;
 
-        // isFill = false
-        xLeft = currentPoint[0];
-        xRight = currentPoint[0];
-
-        //find xleft
         let i = 1;
-        targetColor = getPointColor(
-            newOGC,
-            currentPoint[0] - i,
-            currentPoint[1]
-        );
+        var targetColor = getPointColor(cacheMap, positionX - i, positionY);
 
-        while (targetColor[3] < 10) {
-            count++;
-            if (count > maxStack) {
-                console.log('栈溢出');
-                return;
-            }
-
-            fillColor(currentPoint[0] - i, currentPoint[1], rgba);
-            xLeft = currentPoint[0] - i;
+        while (isBlankArea(targetColor)) {
+            fillColor(positionX - i, positionY, rgba);
+            xLeft = positionX - i;
             i++;
-            targetColor = getPointColor(
-                newOGC,
-                currentPoint[0] - i,
-                currentPoint[1]
-            );
+            targetColor = getPointColor(cacheMap, positionX - i, positionY);
         }
-
         //find xRight
-        i = 0;
-        targetColor = getPointColor(
-            newOGC,
-            currentPoint[0] + i,
-            currentPoint[1]
-        );
-        while (targetColor[3] < 10) {
-            count++;
-            if (count > maxStack) {
-                console.log('栈溢出');
-                return;
-            }
-            fillColor(currentPoint[0] + i, currentPoint[1], rgba);
+        i = 1;
+        targetColor = getPointColor(cacheMap, positionX + i, positionY);
+        while (isBlankArea(targetColor)) {
+            fillColor(positionX + i, positionY, rgba);
             i++;
-            xRight = currentPoint[0] + i;
-            targetColor = getPointColor(
-                newOGC,
-                currentPoint[0] + i,
-                currentPoint[1]
-            );
+            xRight = positionX + i;
+            targetColor = getPointColor(cacheMap, positionX + i, positionY);
         }
-        // console.log(xLeft,xRight)
-
         //find y+1's seed
         var candidateSeed = 0;
-        let ytop = currentPoint[1] + 1;
+        let ytop = positionY + 1;
         for (let i = xLeft; i <= xRight; i++) {
-            count++;
-            if (count > maxStack) {
-                console.log('栈溢出');
-                return;
-            }
-            targetColor = getPointColor(newOGC, i, ytop);
-            if (targetColor[3] < 10 && !isSameColor(targetColor, rgba)) {
+            targetColor = getPointColor(cacheMap, i, ytop);
+            if (isBlankArea(targetColor) && !isSameColor(targetColor, rgba)) {
                 candidateSeed = i;
-            } else {
-                targetColor = getPointColor(newOGC, i - 1, ytop);
-                if (targetColor[3] < 10 && !isSameColor(targetColor, rgba)) {
-                    seedStack.push([i - 1, ytop]);
-                }
             }
         }
         if (candidateSeed) {
@@ -133,27 +118,18 @@ export function scanLine(ctx, x, y, rgba) {
 
         //find y-1's seed
         candidateSeed = 0;
-        let ybottom = currentPoint[1] - 1;
+        let ybottom = positionY - 1;
         for (let i = xLeft; i <= xRight; i++) {
-            count++;
-            if (count > maxStack) {
-                console.log('栈溢出');
-                return;
-            }
-            targetColor = getPointColor(newOGC, i, ybottom);
-            if (targetColor[3] < 10 && !isSameColor(targetColor, rgba)) {
+            targetColor = getPointColor(cacheMap, i, ybottom);
+            if (isBlankArea(targetColor) && !isSameColor(targetColor, rgba)) {
                 candidateSeed = i;
-            } else {
-                targetColor = getPointColor(newOGC, i - 1, ybottom);
-                if (targetColor[3] < 10 && !isSameColor(targetColor, rgba)) {
-                    seedStack.push([i - 1, ybottom]);
-                    // console.log(i - 1,currentPoint[1]-1)
-                }
             }
         }
         if (candidateSeed) {
             seedStack.push([candidateSeed, ybottom]);
-            // console.log(candidateSeed,currentPoint[1]-1)
+            // console.log(candidateSeed,positionY-1)
         }
     }
+
+    mapToImage(cacheMap, canvasWith, canvasHeight, ctx);
 }
