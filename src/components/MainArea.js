@@ -21,10 +21,7 @@ export class MainArea extends Component {
         const { ctx, canvasHeight, canvasWith } = this.state;
         ctx.strokeStyle = '#666';
         ctx.lineWidth = 1;
-        console.time('scanLine');
-
         scanLine(ctx, x, y, [255, 122, 0, 255], canvasWith, canvasHeight);
-        console.timeEnd('scanLine');
     };
 
     getPosition = e => {
@@ -39,8 +36,8 @@ export class MainArea extends Component {
         var c = document.getElementById('myCanvas');
         var ctx = c.getContext('2d');
 
-        var canvasWith = 300;
-        var canvasHeight = 200;
+        var canvasWith = 400;
+        var canvasHeight = 400;
         this.setState({
             ctx,
             canvasWith,
