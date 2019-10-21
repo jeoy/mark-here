@@ -38,6 +38,11 @@ export function scanLineWorker() {
                     !isSameColor(pointColor, filledColor)
                 ) {
                     candidateSeed = i;
+                } else {
+                    pointColor = getPointColor(i - 1, positionY);
+                    if (isBlankArea(pointColor) && !isSameColor(pointColor, filledColor)) {
+                        seedStack.push([i - 1, positionY])
+                    }
                 }
             }
             if (candidateSeed) {
